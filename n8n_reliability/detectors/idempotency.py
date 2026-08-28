@@ -17,13 +17,30 @@ Steps 2-4 are deferred to the gold-set phase (llm_annotator.py, kappa.py —
 not yet built) and must not be inferred from this module alone. Calling
 `idempotency_candidate` and reporting its True/False rate as "the
 idempotency rate" would misrepresent a Tier-C signal as if it were Tier A/B.
+
+Enriched after the original prototype (prototype/surface.py) was recovered
+and diffed against this module: the prototype's `idempotency()` also
+checked for the literal string "idempotency" and for a Remove Duplicates
+node, searched across the WHOLE workflow blob (`json.dumps(w)`) — which
+would catch those words inside a sticky note's comment text, the exact bug
+class this rewrite exists to fix (see detectors/db_upsert.py). Both signals
+are reproduced here, but scoped to non-sticky node parameters only:
+`remove_duplicates_node_present` reads the node `type` field exactly
+(Tier A — deterministic, no text search at all) instead of blob-searching
+for the string "removeduplicates"; `idempotency_keyword_present` still does
+a text search (inherently Tier C) but only within each non-sticky node's
+own `parameters`, never the sticky-note-containing workflow blob.
 """
 
 from __future__ import annotations
 
+import json
+
 from ..sticky_notes import executable_nodes
 from .base import Detector, Tier, register
 from .db_upsert import db_upsert_operation
+
+REMOVE_DUPLICATES_TYPE = "n8n-nodes-base.removeDuplicates"
 
 # Node types where "read-then-branch-then-write" commonly implements a
 # duplicate/existence check ahead of a create — a plausible idempotency
@@ -53,12 +70,61 @@ def _has_conditional_before_write(workflow: dict) -> bool:
     return bool(types & _CONDITIONAL_TYPES) and bool(types & _WRITE_TYPES)
 
 
+def remove_duplicates_node_present(workflow: dict) -> bool:
+    """Exact node.type match — deterministic (Tier A), not a text search."""
+    return any(n.get("type") == REMOVE_DUPLICATES_TYPE for n in executable_nodes(workflow))
+
+
+def idempotency_keyword_present(workflow: dict) -> bool:
+    """The literal word "idempotency" appearing in a non-sticky node's own
+    `parameters` (e.g. a header name, a comment field on the node itself,
+    an expression). Still a free-text heuristic (Tier C) — just scoped away
+    from sticky-note text, unlike the prototype's whole-blob search.
+    """
+    return any(
+        "idempotency" in json.dumps(n.get("parameters") or {}).lower()
+        for n in executable_nodes(workflow)
+    )
+
+
 def idempotency_candidate(workflow: dict) -> bool:
     """Annotator 1 (candidate only — see module docstring)."""
-    return db_upsert_operation(workflow) or _has_conditional_before_write(workflow)
+    return (
+        db_upsert_operation(workflow)
+        or _has_conditional_before_write(workflow)
+        or remove_duplicates_node_present(workflow)
+        or idempotency_keyword_present(workflow)
+    )
 
 
-DETECTOR_VERSION = "0.1.0-candidate"
+DETECTOR_VERSION = "0.2.0-candidate"
+
+register(
+    Detector(
+        key="remove_duplicates_node_present",
+        tier=Tier.A_DETERMINISTIC,
+        version="1.0.0",
+        summary="Node typu n8n-nodes-base.removeDuplicates obecny w workflow",
+        denominator_definition="wszystkie pliki workflow w korpusie",
+        fn=remove_duplicates_node_present,
+        notes="Jeden z sygnałów składowych idempotency_candidate, raportowany też osobno.",
+    )
+)
+
+register(
+    Detector(
+        key="idempotency_keyword_present",
+        tier=Tier.C_SEMANTIC,
+        version="0.1.0-candidate",
+        summary="KANDYDAT — słowo 'idempotency' w parametrach node'a (nie w sticky note)",
+        denominator_definition=(
+            "wszystkie pliki workflow w korpusie — UWAGA: to nie jest zwalidowana "
+            "metryka. Jeden z sygnałów składowych idempotency_candidate, raportowany "
+            "też osobno."
+        ),
+        fn=idempotency_keyword_present,
+    )
+)
 
 register(
     Detector(
@@ -71,6 +137,11 @@ register(
             "metryka, patrz docstring modułu. Nie raportować surowego odsetka jako faktu."
         ),
         fn=idempotency_candidate,
-        notes="Wymaga drugiego anotatora (LLM) + Cohen's kappa przed publikacją liczby.",
+        notes=(
+            "Wymaga drugiego anotatora (LLM) + Cohen's kappa przed publikacją liczby. "
+            "v0.2.0: rozszerzone o remove_duplicates_node_present i "
+            "idempotency_keyword_present po rekoncyliacji z odzyskanym prototypem "
+            "(prototype/surface.py)."
+        ),
     )
 )

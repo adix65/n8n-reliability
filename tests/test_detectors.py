@@ -10,6 +10,7 @@ from n8n_reliability.detectors import (
     error_handling,
     idempotency,
     retry,
+    side_effects,
     throttling,
     validation,
     webhook_auth,
@@ -57,6 +58,15 @@ def test_error_workflow_setting_is_never_measurable(load_fixture):
     bare = {"nodes": [], "connections": {}, "settings": {}}
     assert error_handling.error_workflow_setting(bare) == base.NOT_MEASURABLE
     assert error_handling.error_workflow_setting_key_present(bare) is False
+
+
+def test_always_output_data_tracked_separately_from_recovery(load_fixture):
+    wf = load_fixture("always_output_data")
+    assert error_handling.always_output_data_present(wf) is True
+    assert error_handling.has_recovery_mechanism(wf) is False, (
+        "alwaysOutputData is a data-flow convenience, not recovery — mirrors "
+        "the original prototype's own exclusion of it from its composite metric."
+    )
 
 
 def test_clean_baseline_has_no_recovery_signals(load_fixture):
@@ -195,6 +205,70 @@ def test_corruption_commit_citation_fields():
     assert citation["commit_url"].endswith(citation["commit_sha"])
     assert citation["verified_still_broken_on_pinned_commit"] is True
     assert citation["pinned_commit_is_descendant"] is True
+
+
+# ---- idempotency.py enrichment (remove_duplicates, idempotency keyword) ------
+
+
+def test_remove_duplicates_node_detected(load_fixture):
+    wf = load_fixture("remove_duplicates_present")
+    assert idempotency.remove_duplicates_node_present(wf) is True
+    assert idempotency.idempotency_candidate(wf) is True
+
+
+def test_idempotency_keyword_in_real_node_detected(load_fixture):
+    wf = load_fixture("idempotency_keyword_regression")
+    assert idempotency.idempotency_keyword_present(wf) is True
+
+
+def test_idempotency_keyword_only_in_sticky_note_is_not_detected(load_fixture):
+    wf = load_fixture("idempotency_keyword_only_in_sticky")
+    assert idempotency.idempotency_keyword_present(wf) is False, (
+        "The word must come from a real node's parameters, not a sticky-note "
+        "comment — same bug class as the db_upsert.py regression test."
+    )
+    assert idempotency.idempotency_candidate(wf) is False
+
+
+# ---- side_effects.py — reproduces prototype/surface.py's conditional metrics --
+
+
+def test_webhook_trigger_present_excludes_respond_to_webhook():
+    respond_only = {"nodes": [{"id": "1", "name": "Respond", "type": "n8n-nodes-base.respondToWebhook", "parameters": {}}]}
+    assert side_effects.webhook_trigger_present(respond_only) is False
+
+
+def test_has_side_effect_detects_send_and_db_write(load_fixture):
+    send_wf = load_fixture("webhook_side_effect_no_auth_no_idem")
+    assert side_effects.send_node_present(send_wf) is True
+    assert side_effects.has_side_effect(send_wf) is True
+
+    db_wf = load_fixture("webhook_side_effect_with_auth_and_idem")
+    assert side_effects.db_write_present(db_wf) is True
+    assert side_effects.has_side_effect(db_wf) is True
+
+
+def test_conditional_metrics_not_applicable_without_the_precondition(load_fixture):
+    wf = load_fixture("clean_baseline")
+    assert side_effects.idempotency_within_webhook_and_side_effect(wf) == base.NOT_APPLICABLE
+    assert side_effects.webhook_auth_within_webhook_and_side_effect(wf) == base.NOT_APPLICABLE
+    assert side_effects.throttling_within_external_http(wf) == base.NOT_APPLICABLE
+
+
+def test_conditional_metrics_applicable_and_correct(load_fixture):
+    no_auth = load_fixture("webhook_side_effect_no_auth_no_idem")
+    assert side_effects.webhook_auth_within_webhook_and_side_effect(no_auth) is False
+    assert side_effects.idempotency_within_webhook_and_side_effect(no_auth) is False
+
+    with_auth = load_fixture("webhook_side_effect_with_auth_and_idem")
+    assert side_effects.webhook_auth_within_webhook_and_side_effect(with_auth) is True
+    assert side_effects.idempotency_within_webhook_and_side_effect(with_auth) is True
+
+    http_throttled = load_fixture("external_http_with_wait")
+    assert side_effects.throttling_within_external_http(http_throttled) is True
+
+    http_unthrottled = load_fixture("external_http_no_throttle")
+    assert side_effects.throttling_within_external_http(http_unthrottled) is False
 
 
 # ---- Tier C candidates (not validated, but must not crash / must be labeled) --

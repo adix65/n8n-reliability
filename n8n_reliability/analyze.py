@@ -22,7 +22,7 @@ from .dedupe import Family, group_families
 from .detectors.base import NOT_APPLICABLE, NOT_MEASURABLE, REGISTRY, Tier
 from .manifest import write_manifest
 from .models import LoadedWorkflow, load_corpus
-from .sticky_notes import sticky_note_count
+from .sticky_notes import executable_nodes, sticky_note_count
 
 SENTINELS = (NOT_APPLICABLE, NOT_MEASURABLE)
 
@@ -71,6 +71,38 @@ def _aggregate(values: list[Any], denominator_definition: str) -> dict:
         "excluded_not_applicable": not_applicable,
         "excluded_not_measurable_from_export": not_measurable,
         "total_units": total,
+    }
+
+
+def _node_level_stats(loaded: list[LoadedWorkflow]) -> dict:
+    """Raw, per-node (not per-workflow) counts — supplementary to the
+    per-file/per-family detector metrics below, added for parity with the
+    original prototype's census.py, which reported node-level totals
+    alongside its workflow-level ones (e.g. "291/30774 nodes have
+    retryOnFail=true"). Reported with BOTH denominators (including and
+    excluding sticky notes) since the prototype's own figure used the
+    former and this package's stated policy is the latter — neither is
+    hidden.
+    """
+    total_nodes_incl_sticky = sum(len(wf.data.get("nodes") or []) for wf in loaded)
+    total_sticky = sum(sticky_note_count(wf.data) for wf in loaded)
+    total_executable = total_nodes_incl_sticky - total_sticky
+    retry_nodes = sum(
+        1 for wf in loaded for n in executable_nodes(wf.data) if n.get("retryOnFail") is True
+    )
+    return {
+        "total_nodes_including_sticky_notes": total_nodes_incl_sticky,
+        "total_sticky_notes": total_sticky,
+        "total_executable_nodes": total_executable,
+        "nodes_with_retry_on_fail": {
+            "count": retry_nodes,
+            "percent_of_all_nodes_incl_sticky": (
+                round(100 * retry_nodes / total_nodes_incl_sticky, 2) if total_nodes_incl_sticky else None
+            ),
+            "percent_of_executable_nodes": (
+                round(100 * retry_nodes / total_executable, 2) if total_executable else None
+            ),
+        },
     }
 
 
@@ -125,6 +157,7 @@ def run_analysis(corpus_dir: Path, corpus_label: CorpusLabel) -> dict:
             "families_with_multiple_members": sum(1 for f in families if f.size > 1),
             "sticky_note_instances_excluded_from_all_detectors": total_sticky_notes,
             "load_errors": [{"path": str(e.path), "error": e.error} for e in load_errors],
+            "node_level_stats": _node_level_stats(loaded),
         },
         "metrics_tier_a_b_validated": validated,
         "metrics_tier_c_candidates_NOT_VALIDATED": {

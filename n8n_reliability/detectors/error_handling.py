@@ -22,6 +22,15 @@ Fixes two bugs identified before this rewrite:
    version of this analysis folded it into "has error handling"; it is kept
    here as its own, separate detector (`stop_and_error_present`) and is
    explicitly excluded from `has_recovery_mechanism`.
+
+`always_output_data_present` was added after the original prototype
+(prototype/census.py) was recovered and diffed against this rewrite: the
+prototype tracked `alwaysOutputData=True` as its own bucket (245/2061) but
+explicitly excluded it from its "any error-handling mechanism" composite —
+`alwaysOutputData` controls whether a node emits an empty item instead of
+stopping the branch when it produces no output, which is a data-flow
+convenience, not failure recovery. Reproduced here with the same exclusion
+for the same reason, not folded into `has_recovery_mechanism`.
 """
 
 from __future__ import annotations
@@ -74,6 +83,13 @@ def node_on_error_recovery(workflow: dict) -> bool:
 def node_continue_on_fail(workflow: dict) -> bool:
     """Legacy pre-`onError` boolean equivalent of the above."""
     return any(n.get("continueOnFail") is True for n in executable_nodes(workflow))
+
+
+def always_output_data_present(workflow: dict) -> bool:
+    """Any node has `alwaysOutputData: true` — a data-flow convenience
+    (emit an empty item instead of stopping the branch on no output), NOT
+    an error-recovery mechanism. Tracked separately; see module docstring."""
+    return any(n.get("alwaysOutputData") is True for n in executable_nodes(workflow))
 
 
 def has_recovery_mechanism(workflow: dict) -> bool:
@@ -155,6 +171,22 @@ register(
         summary="Co najmniej jeden node ma continueOnFail=true (schemat legacy)",
         denominator_definition="wszystkie pliki workflow w korpusie",
         fn=node_continue_on_fail,
+    )
+)
+
+register(
+    Detector(
+        key="always_output_data_present",
+        tier=Tier.A_DETERMINISTIC,
+        version=DETECTOR_VERSION,
+        summary="Co najmniej jeden node ma alwaysOutputData=true",
+        denominator_definition="wszystkie pliki workflow w korpusie",
+        fn=always_output_data_present,
+        notes=(
+            "Wygoda przepływu danych (pusty item zamiast zatrzymania gałęzi), NIE "
+            "mechanizm odzyskiwania po błędzie — świadomie wykluczone z "
+            "has_recovery_mechanism, tak jak w oryginalnym prototypie."
+        ),
     )
 )
 
