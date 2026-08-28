@@ -6,6 +6,7 @@ from . import (  # noqa: F401
     error_handling,
     idempotency,
     retry,
+    side_effects,
     throttling,
     validation,
     webhook_auth,

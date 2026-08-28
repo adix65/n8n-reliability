@@ -31,13 +31,25 @@ node-level `retryOnFail`. Per-family aggregation uses "any member exhibits
 X" semantics and should be read as an upper bound on family-level
 prevalence, not an exact one.
 
-METHODOLOGY NOTE (unrecoverable prior prototype): this reproduces 1720
-families out of 2061 files on the pinned corpus (commit 94007c1445d92). An
-earlier, now-unrecoverable prototype run was cited as finding 1768
-families; its exact normalization was not available to verify, so this
-package reports its own, independently-derived and fully reproducible
-number rather than attempting to reverse-engineer a match to the earlier
-one.
+METHODOLOGY NOTE (reconciled against the recovered original prototype):
+this module's own method — node-type multiset only, sticky notes excluded
+— produces 1720 families out of 2061 files on the pinned corpus. The
+original prototype (prototype/dedupe.py, recovered and merged into this
+branch after initially being reported unavailable) was cited as finding
+1768. That is no longer an open question: re-running the prototype's own
+`graph_hash()` function verbatim against the pinned corpus reproduces
+1768 exactly, confirmed independently before writing this note. The two
+numbers differ because the methods differ, on purpose, in three ways: (1)
+the prototype includes sticky notes in its node signature, this module
+excludes them; (2) the prototype's signature is `type@typeVersion`, this
+module uses bare `type`; (3) the prototype's edge component still
+contributes to its hash even for connection targets that
+`detectors.connections_integrity` shows do not resolve to any real node —
+i.e. it partly hashes corruption noise, not topology. Point (1) is the
+deliberate, explicit instruction this rewrite was built to follow
+("sticky notes excluded from every detector"); points (2) and (3) are this
+module's own simplifications. 1720 and 1768 are both correct outputs of
+their respective, now fully-understood methods — neither is a mistake.
 """
 
 from __future__ import annotations
