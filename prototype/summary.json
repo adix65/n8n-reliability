@@ -1,0 +1,56 @@
+{
+  "korpus": {
+    "repo": "Zie619/n8n-workflows",
+    "commit": "94007c1445d9258a7da116646b79473e7c7c3282",
+    "commit_date": "2026-06-24",
+    "licencja": "MIT",
+    "data_analizy": "2026-08-28"
+  },
+  "rozbieznosc_deklaracji": {
+    "stats_json_total_workflows": 4343,
+    "stats_json_total_nodes": 29528,
+    "stats_json_last_updated": "2025-11-03",
+    "realnie_plikow_json": 2061,
+    "realnie_nodow": 30774,
+    "wspolczynnik": 2.11
+  },
+  "deduplikacja": {
+    "plikow": 2061,
+    "duplikaty_bajtowe": 0,
+    "unikalne_rodziny_hash_grafu": 1768,
+    "redukcja_proc": 14.2
+  },
+  "error_handling_mianownik_2061": {
+    "settings.errorWorkflow": 0,
+    "Error Trigger node": 18,
+    "Stop and Error node": 1083,
+    "workflow_z_retryOnFail": 108,
+    "workflow_z_onError_continue": 194,
+    "workflow_z_alwaysOutputData": 245
+  },
+  "nody": {
+    "lacznie": 30774,
+    "z_retryOnFail": 291,
+    "proc": 0.95
+  },
+  "metryki_warunkowe": {
+    "webhook_plus_side_effect": {
+      "mianownik": 221,
+      "z_idempotencja": 12,
+      "proc": 5.4,
+      "z_auth_webhooka": 17,
+      "proc_auth": 7.7
+    },
+    "zewnetrzne_http": {
+      "mianownik": 896,
+      "z_throttlingiem": 196,
+      "proc": 21.9
+    }
+  },
+  "ZASTRZEZENIA": [
+    "settings.errorWorkflow=0 to niemal na pewno artefakt eksportu template - referencja do ID workflow w instancji nie przenosi sie do pliku. NIE raportowac jako 0%.",
+    "Stop and Error to celowe przerwanie, NIE mechanizm odzyskiwania. Nie liczyc do error handlingu.",
+    "Detektory bez gold setu - brak zmierzonego precision/recall. Liczby wstepne.",
+    "Duplikaty semantyczne liczone tylko hashem grafu - warianty parametrow nie sa wykrywane."
+  ]
+}
