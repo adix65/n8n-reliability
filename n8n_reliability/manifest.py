@@ -14,6 +14,7 @@ from pathlib import Path
 
 from . import __version__ as PACKAGE_VERSION
 from .detectors import REGISTRY
+from .detectors.connections_integrity import corruption_commit_citation
 from .fetch_corpus import PINNED_COMMIT_DATE, PINNED_COMMIT_SHA
 
 
@@ -41,6 +42,7 @@ class Manifest:
     corpus_actual_commit_sha: str | None
     corpus_commit_matches_pinned: bool
     detector_versions: dict = field(default_factory=dict)
+    corpus_corruption_provenance: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -60,6 +62,7 @@ def build_manifest(corpus_dir: Path) -> Manifest:
         detector_versions={
             key: {"tier": d.tier.value, "version": d.version} for key, d in sorted(REGISTRY.items())
         },
+        corpus_corruption_provenance=corruption_commit_citation(),
     )
 
 
