@@ -1,0 +1,29 @@
+{
+  "id": "fixture-webhook_with_auth",
+  "name": "webhook_with_auth",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "abc",
+        "httpMethod": "POST",
+        "authentication": "{{ $credentials.basicAuth }}"
+      }
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "meta": {},
+  "tags": [],
+  "notes": ""
+}
