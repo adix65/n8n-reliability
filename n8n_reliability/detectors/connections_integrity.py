@@ -65,20 +65,21 @@ old id. That exact file is byte-identical between this commit and the
 pinned corpus HEAD (`git diff` empty) — the break was never fixed
 afterward.
 
-Ancestry (`git merge-base --is-ancestor`, confirmed true): PINNED_COMMIT_SHA
-(`94007c1445d9258a7da116646b79473e7c7c3282`) is a descendant of
-`5ffee225`. There are 57 commits in total between them in the repository's
-history — more than a first pass assumed — but only TWO of those 57 touch
-any file under `workflows/*.json` at all: the merge of PR #144
-(`criptolandiatv/claude/medcards-ai-rebuild-...`) and "feat: Add new n8n
-workflow templates (#3)". Both are pure additions of 3-4 new template
-files (ids 9001-9004) with zero deletions or modifications to any existing
-workflow file (`git show --stat` for both shows insertions only). None of
-the other 55 commits (CI/CD, documentation, GitHub Pages, the unrelated
-medcards-ai product, the ai-stack/ComfyUI addition) touches `workflows/`
-at all. In other words: the corruption introduced at `5ffee225` was
-neither fixed nor measurably deepened by anything between it and the
-pinned commit this package analyzes.
+Potwierdzone: PINNED_COMMIT_SHA (94007c1445d9258a7da116646b79473e7c7c3282)
+jest bezpośrednim potomkiem 5ffee225 (git merge-base --is-ancestor). Między
+tymi dwoma commitami jest 57 commitów w całym repozytorium, ale tylko 2 z
+nich dotykają jakiegokolwiek pliku pod workflows/ — i oba to wyłącznie
+dodanie czterech nowych plików (9001-9004), zero modyfikacji plików
+istniejących. Plik przykładowy z tego modułu jest bajtowo identyczny (md5)
+między stanem na 5ffee225 a stanem na pinned commit.
+
+(Precyzja celowa: liczba "2" powyżej to liczba commitów PO filtrze na
+ścieżkę workflows/, nie liczba wszystkich commitów w zakresie — tych jest
+57. Pozostałe 55 to CI/CD, dokumentacja, GitHub Pages, niepowiązany produkt
+medcards-ai i dodatek ai-stack/ComfyUI — żaden nie dotyka workflows/ w
+ogóle. Innymi słowy: korupcja wprowadzona w 5ffee225 nie została ani
+naprawiona, ani pogłębiona przez nic pomiędzy nim a pinowanym commitem,
+który analizuje ten pakiet.)
 
 Citable directly from the source repository's public history at:
 https://github.com/Zie619/n8n-workflows/commit/5ffee225b7c9e314cacefd7f0a46a1c10ae3d20e
