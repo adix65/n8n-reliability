@@ -7,8 +7,8 @@ An earlier version of this module also hashed a "connection edge" component
 (source-type -> target-type pairs from `connections`), intending families
 to match on graph *shape*, not just node inventory. That component was
 removed after corpus inspection showed it carried no real signal on this
-corpus: `detectors.connections_integrity` establishes that 27,502 of
-~27,544 connection-target references in this corpus (99.85%, across
+corpus: `detectors.connections_integrity` establishes that 27,525 of
+27,544 connection-target references in this corpus (99.93%, across
 1363/2061 files) follow the pattern `error-handler-<uuid>` and do not
 resolve to any real node in the file — see that module's docstring for the
 full finding. An edge signature built from unresolvable targets is not

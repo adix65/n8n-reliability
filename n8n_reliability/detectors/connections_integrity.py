@@ -8,9 +8,9 @@ never resolve to a real node `name` or `id` in the same file.
 
 Measured directly against the pinned corpus:
   - 1367/2061 files have a non-empty `connections` object at all.
-  - Across those, out of ~27,544 individual connection-target references,
+  - Across those, out of 27,544 individual connection-target references,
     only 19 resolve to a real node name, 0 resolve to a real node id, and
-    27,502 (99.85% of all targets, in 1363/2061 files) follow the exact
+    27,525 (99.93% of all targets, in 1363/2061 files) follow the exact
     pattern `error-handler-<uuid>[-<8 hex chars>]` — a string that matches
     no node in the file.
 
@@ -108,7 +108,7 @@ register(
         fn=connections_have_unresolvable_targets,
         notes=(
             "Kluczowe znalezisko o jakości korpusu — patrz docstring modułu. "
-            "99,85% referencji celu w connections tego korpusu nie rozwiązuje się "
+            "99,93% referencji celu w connections tego korpusu nie rozwiązuje się "
             "do żadnego realnego node'a."
         ),
     )

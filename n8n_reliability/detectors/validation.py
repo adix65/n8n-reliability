@@ -13,7 +13,7 @@ ADDITIONAL, CORPUS-SPECIFIC CAVEAT: this detector needs real `connections`
 topology to check whether a conditional node sits immediately downstream of
 an entry node. `detectors.connections_integrity` establishes that on this
 corpus, connection targets essentially never resolve to a real node
-(99.85% follow an `error-handler-<uuid>` pattern that matches nothing in
+(99.93% follow an `error-handler-<uuid>` pattern that matches nothing in
 the file). As a direct consequence, this detector returns 0/2061 on the
 pinned corpus — that is the corpus's broken topology data being correctly
 reported as absent, not a claim that no workflow in the corpus validates
