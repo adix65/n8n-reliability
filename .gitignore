@@ -1,0 +1,7 @@
+# Corpus is fetched with n8n_reliability/fetch_corpus.py, never committed.
+data/
+*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+out/

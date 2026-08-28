@@ -1,0 +1,27 @@
+{
+  "id": "fixture-sticky_notes_only",
+  "name": "sticky_notes_only",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "content": "just a comment, upsert, retryOnFail, webhook"
+      }
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "meta": {},
+  "tags": [],
+  "notes": ""
+}
