@@ -189,6 +189,14 @@ def test_no_connections_is_not_applicable(load_fixture):
     assert connections_integrity.connections_have_unresolvable_targets(wf) == base.NOT_APPLICABLE
 
 
+def test_corruption_commit_citation_fields():
+    citation = connections_integrity.corruption_commit_citation()
+    assert citation["commit_sha"] == "5ffee225b7c9e314cacefd7f0a46a1c10ae3d20e"
+    assert citation["commit_url"].endswith(citation["commit_sha"])
+    assert citation["verified_still_broken_on_pinned_commit"] is True
+    assert citation["pinned_commit_is_descendant"] is True
+
+
 # ---- Tier C candidates (not validated, but must not crash / must be labeled) --
 
 

@@ -2,14 +2,22 @@
 registered detector per-file AND per-family in parallel -> write
 summary.json (every percent carries its numerator, denominator, and a
 worded denominator definition) and versioned_manifest.json.
+
+Every run analyzes exactly ONE corpus, chosen via `corpus_label`
+("primary" | "secondary"). The two corpora (Zie619/n8n-workflows and
+enescingoz/awesome-n8n-templates — see fetch_corpus.py) are never mixed in
+a single pass, and `corpus_label` is stamped into summary["corpus"]["label"]
+so two summary.json files from two runs can never be confused for each
+other or silently merged.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+from . import fetch_corpus
 from .dedupe import Family, group_families
 from .detectors.base import NOT_APPLICABLE, NOT_MEASURABLE, REGISTRY, Tier
 from .manifest import write_manifest
@@ -17,6 +25,21 @@ from .models import LoadedWorkflow, load_corpus
 from .sticky_notes import sticky_note_count
 
 SENTINELS = (NOT_APPLICABLE, NOT_MEASURABLE)
+
+CorpusLabel = Literal["primary", "secondary"]
+
+_CORPUS_INFO = {
+    "primary": {
+        "source": fetch_corpus.CORPUS_REPO_URL,
+        "license": fetch_corpus.CORPUS_LICENSE,
+        "pinned_commit_sha": fetch_corpus.PINNED_COMMIT_SHA,
+    },
+    "secondary": {
+        "source": fetch_corpus.SECONDARY_CORPUS_REPO_URL,
+        "license": fetch_corpus.SECONDARY_CORPUS_LICENSE,
+        "pinned_commit_sha": fetch_corpus.SECONDARY_PINNED_COMMIT_SHA,
+    },
+}
 
 
 def _combine_any(values: list[Any]) -> Any:
@@ -51,7 +74,10 @@ def _aggregate(values: list[Any], denominator_definition: str) -> dict:
     }
 
 
-def run_analysis(corpus_dir: Path) -> dict:
+def run_analysis(corpus_dir: Path, corpus_label: CorpusLabel) -> dict:
+    if corpus_label not in _CORPUS_INFO:
+        raise ValueError(f"corpus_label must be one of {sorted(_CORPUS_INFO)!r}, got {corpus_label!r}")
+
     loaded, load_errors = load_corpus(corpus_dir)
     families = group_families(loaded)
 
@@ -92,7 +118,8 @@ def run_analysis(corpus_dir: Path) -> dict:
 
     return {
         "corpus": {
-            "source": "https://github.com/Zie619/n8n-workflows",
+            "label": corpus_label,
+            **_CORPUS_INFO[corpus_label],
             "files_total": total_files,
             "families_total": len(families),
             "families_with_multiple_members": sum(1 for f in families if f.size > 1),
@@ -113,10 +140,10 @@ def run_analysis(corpus_dir: Path) -> dict:
     }
 
 
-def write_summary(corpus_dir: Path, out_dir: Path) -> Path:
+def write_summary(corpus_dir: Path, out_dir: Path, corpus_label: CorpusLabel) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
-    summary = run_analysis(corpus_dir)
+    summary = run_analysis(corpus_dir, corpus_label)
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
-    write_manifest(corpus_dir, out_dir / "versioned_manifest.json")
+    write_manifest(corpus_dir, out_dir / "versioned_manifest.json", corpus_label)
     return summary_path

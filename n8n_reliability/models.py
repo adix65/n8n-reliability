@@ -27,21 +27,27 @@ class LoadError:
 
 
 def iter_workflow_files(corpus_dir: Path) -> list[Path]:
-    """All `*.json` files under `<corpus_dir>/workflows/`.
+    """All `*.json` workflow-export files in a corpus checkout.
 
-    Restricted to the `workflows/` subdirectory on purpose: the cloned
-    Zie619/n8n-workflows checkout also contains an unrelated `medcards-ai/`
-    application and assorted tooling/config JSON (package.json, tsconfig.json,
-    .devcontainer files, etc.) that are not workflow exports and must not be
-    counted as such.
+    Two corpus layouts are supported (see fetch_corpus.py):
+
+    - PRIMARY (Zie619/n8n-workflows): workflow exports live under a
+      `workflows/` subdirectory. Restricted to it on purpose — the checkout
+      also contains an unrelated `medcards-ai/` application and assorted
+      tooling/config JSON (package.json, tsconfig.json, .devcontainer files,
+      etc.) that are not workflow exports and must not be counted as such.
+    - SECONDARY (enescingoz/awesome-n8n-templates): there is no `workflows/`
+      subdirectory — exports live directly in topic-named folders at the
+      repo root (`Airtable/`, `Discord/`, ...). In that case every `*.json`
+      under the checkout is scanned, excluding `.git` internals; anything
+      that isn't actually a workflow export (missing a `nodes` key, or not
+      valid JSON — both observed in this corpus) is caught by
+      `load_corpus()`'s per-file error handling below, not filtered here.
     """
     root = corpus_dir / "workflows"
-    if not root.is_dir():
-        raise FileNotFoundError(
-            f"{root} does not exist — expected a checkout with a workflows/ "
-            "subdirectory (see fetch_corpus.py)"
-        )
-    return sorted(root.rglob("*.json"))
+    if root.is_dir():
+        return sorted(root.rglob("*.json"))
+    return sorted(p for p in corpus_dir.rglob("*.json") if ".git" not in p.parts)
 
 
 def load_corpus(corpus_dir: Path) -> tuple[list[LoadedWorkflow], list[LoadError]]:
